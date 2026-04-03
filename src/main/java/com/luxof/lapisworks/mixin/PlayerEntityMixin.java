@@ -63,10 +63,12 @@ public abstract class PlayerEntityMixin extends LivingEntity implements EnchSent
 
     // mojang............
     @Inject(
-        at = @At("TAIL"),
-        method = "readCustomDataFromNbt"
+        at = @At("HEAD"),
+        method = "tick"
     )
-    public void lapisworks$JUSTFUCKINGCARRYTHESPEEDYOUTWAT(NbtCompound nbt, CallbackInfo ci) {
+    public void tick$applySpeed(CallbackInfo ci) {
+        if (this.enchSentPos == null && this.sentRange == null) return;
+        
         var speed = this.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
         speed.setBaseValue(
             speed.getBaseValue() +
