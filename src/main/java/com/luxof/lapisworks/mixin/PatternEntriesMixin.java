@@ -51,10 +51,9 @@ public class PatternEntriesMixin implements HexcessiblePWShapeSupport {
         method = "reindex",
         at = @At(
             value = "INVOKE",
-            target = "Ldev/tizu/hexcessible/entries/BookEntries;get(Lnet/minecraft/util/Identifier;)Ljava/util/List;",
-            shift = At.Shift.AFTER
+            target = "Ldev/tizu/hexcessible/entries/BookEntries;get(Lnet/minecraft/util/Identifier;)Ljava/util/List;"
         ),
-        locals = LocalCapture.CAPTURE_FAILHARD,
+        locals = LocalCapture.CAPTURE_FAILSOFT,
         cancellable = true
     )
     private void lapisworks$registerPWShapePatternsDifferently(

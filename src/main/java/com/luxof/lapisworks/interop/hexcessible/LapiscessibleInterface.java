@@ -8,10 +8,24 @@ import net.minecraft.util.Identifier;
 
 public class LapiscessibleInterface {
     public static void recalibratePWShapeUnlocksInHexcessible() {
-        ((HexcessiblePWShapeSupport)PatternEntries.INSTANCE).calibratePWShapeUnlocks();
+        try {
+            Object instance = PatternEntries.INSTANCE;
+            if (instance instanceof HexcessiblePWShapeSupport) {
+                ((HexcessiblePWShapeSupport)instance).calibratePWShapeUnlocks();
+            }
+        } catch (Throwable t) {
+            // Silently fail if Hexcessible integration is not available
+        }
     }
 
     public static void unlockPWShapeInHexcessibleByAdvancement(Identifier advancementId) {
-        ((HexcessiblePWShapeSupport)PatternEntries.INSTANCE).unlockPWShapeByAdvancement(advancementId);
+        try {
+            Object instance = PatternEntries.INSTANCE;
+            if (instance instanceof HexcessiblePWShapeSupport) {
+                ((HexcessiblePWShapeSupport)instance).unlockPWShapeByAdvancement(advancementId);
+            }
+        } catch (Throwable t) {
+            // Silently fail if Hexcessible integration is not available
+        }
     }
 }

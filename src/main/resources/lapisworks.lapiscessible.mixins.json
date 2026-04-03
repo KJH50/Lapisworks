@@ -7,7 +7,7 @@
 		"PatternEntriesMixin"
 	],
 	"injectors": {
-		"defaultRequire": 1
+		"defaultRequire": 0
 	},
 	"plugin": "com.luxof.lapisworks.mixin.plugins.LapiscessibleMixinConfigPlugin",
 	"overwrites": {
