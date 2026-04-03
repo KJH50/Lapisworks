@@ -12,8 +12,6 @@ import static com.luxof.lapisworks.init.ThemConfigFlags.chosenFlags;
 import static com.luxof.lapisworks.init.ThemConfigFlags.isPWShapePattern;
 import static com.luxof.lapisworks.init.ThemConfigFlags.specificToGenericId;
 
-import com.llamalad7.mixinextras.sugar.Local;
-
 import dev.tizu.hexcessible.entries.BookEntries;
 import dev.tizu.hexcessible.entries.PatternEntries;
 
@@ -50,7 +48,7 @@ public class PatternEntriesMixin implements HexcessiblePWShapeSupport {
     }
 
     @Inject(
-        method = "lambda$reindex$1",
+        method = "reindex",
         at = @At(
             value = "INVOKE",
             target = "Ldev/tizu/hexcessible/entries/BookEntries;get(Lnet/minecraft/util/Identifier;)Ljava/util/List;",
@@ -62,16 +60,15 @@ public class PatternEntriesMixin implements HexcessiblePWShapeSupport {
     private void lapisworks$registerPWShapePatternsDifferently(
         RegistryKey<ActionRegistryEntry> key,
         CallbackInfo ci,
-        @Local Identifier id,
-        @Local String name,
-        @Local Supplier<Boolean> checkLock,
-        @Local HexDir dir,
-        @Local List<List<HexAngle>> sig
+        Identifier id,
+        String name,
+        Supplier<Boolean> checkLock,
+        HexDir dir,
+        List<List<HexAngle>> sig
     ) {
         String specificId = id.toString();
         String genericId = specificToGenericId.get(specificId);
         if (genericId == null) return;
-        if (genericId.equals("lapisworks:hastenature"))
 
         if (isPWShapePattern(specificId)) {
             List<BookEntries.Entry> bookEntries = getEntriesForPWShapePattern(genericId);
@@ -86,9 +83,6 @@ public class PatternEntriesMixin implements HexcessiblePWShapeSupport {
 
     @Unique
     private static List<BookEntries.Entry> getEntriesForPWShapePattern(String genericId) {
-        // for some reason these lists are always fucking empty
-        // in fact, the entire book is empty at this stage.
-        // why???
         return ((AccessPWBookEntries)BookEntries.INSTANCE).getEntriesOfPWShapePattern(genericId);
     }
 
@@ -99,7 +93,9 @@ public class PatternEntriesMixin implements HexcessiblePWShapeSupport {
         int chosen = chosenFlags.get(genericId);
 
         PatternEntries.Entry entry = pwShapePatterns.get(genericId + String.valueOf(chosen));
-        entries.add(entry);
+        if (entry != null) {
+            entries.add(entry);
+        }
     }
 
     @Override
