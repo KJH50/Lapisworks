@@ -3,11 +3,10 @@
 	"package": "com.luxof.lapisworks.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-		"BookEntriesMixin",
-		"PatternEntriesMixin"
+		"BookEntriesMixin"
 	],
 	"injectors": {
-		"defaultRequire": 0
+		"defaultRequire": 1
 	},
 	"plugin": "com.luxof.lapisworks.mixin.plugins.LapiscessibleMixinConfigPlugin",
 	"overwrites": {
