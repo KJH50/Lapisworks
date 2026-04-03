@@ -58,19 +58,24 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 
 	@Unique private AttributeContainer juicedUpVals = new AttributeContainer(
 		DefaultAttributeContainer.builder()
-			.add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 0) // fists
-			.add(EntityAttributes.GENERIC_MAX_HEALTH, 0) // skin
-			.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0) // feet
+			.add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 0)
+			.add(EntityAttributes.GENERIC_MAX_HEALTH, 0)
+			.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0)
 			.build()
 	);
 	@Unique private List<Integer> enchantments = new ArrayList<Integer>(List.of(0, 0, 0, 0, 0));
+
+	@Unique private boolean lapisworks$needsAttrSync = false;
+	@Unique private double lapisworks$pendingAttackDamage = 0;
+	@Unique private double lapisworks$pendingMaxHealth = 0;
+	@Unique private double lapisworks$pendingMovementSpeed = 0;
+	@Unique private boolean lapisworks$pendingReach = false;
 
 	@Unique
 	private void expandEnchantmentsIfNeeded(int idx) {
 		while (idx > this.enchantments.size() - 1) { this.enchantments.add(0); }
 	}
 
-	// specification details
 	@Unique @Override
 	public double getAmountOfAttrJuicedUpByAmel(EntityAttribute attribute) {
 		if (attribute == ReachEntityAttributes.REACH) {
@@ -122,7 +127,7 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 			toAttributes.getBaseValue(EntityAttributes.GENERIC_MOVEMENT_SPEED)
 		);
 	}
-	/** on world load ragh */
+
 	@Unique
 	public void setJuiceOnWorldLoad(AttributeContainer toAttributes) {
 		juicedUpVals.getCustomInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE)
@@ -133,6 +138,39 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 
 		juicedUpVals.getCustomInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED)
 			.setBaseValue(toAttributes.getBaseValue(EntityAttributes.GENERIC_MOVEMENT_SPEED));
+	}
+
+	@Unique
+	private void lapisworks$applyPendingAttributes() {
+		if (!this.lapisworks$needsAttrSync) return;
+		if (this.attributes == null) return;
+		if (this.getWorld() != null && this.getWorld().isClient) return;
+
+		this.lapisworks$needsAttrSync = false;
+
+		setJuiceOnWorldLoad(
+			new AttributeContainer(DefaultAttributeContainer.builder()
+				.add(EntityAttributes.GENERIC_ATTACK_DAMAGE, this.lapisworks$pendingAttackDamage)
+				.add(EntityAttributes.GENERIC_MAX_HEALTH, this.lapisworks$pendingMaxHealth)
+				.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, this.lapisworks$pendingMovementSpeed)
+				.build())
+		);
+
+		if (this.lapisworks$pendingReach) {
+			this.attributes.addTemporaryModifiers(
+				ImmutableMultimap.of(
+					REACH, MoarReachYouBitch.REACH_MODIFIER,
+					ATTACK_RANGE, MoarReachYouBitch.ATTACK_REACH_MODIFIER
+				)
+			);
+		}
+	}
+
+	@Inject(at = @At("HEAD"), method = "tick")
+	public void lapisworks$tickApplyPendingAttributes(CallbackInfo ci) {
+		if (this.lapisworks$needsAttrSync) {
+			this.lapisworks$applyPendingAttributes();
+		}
 	}
 
 	@Unique @Override
@@ -147,7 +185,6 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 		this.enchantments.set(whatEnchant, level);
 	}
 
-	// still not DRYer than your dms
 	@Unique @Override
 	public void incrementEnchant(int whatEnchant) { this.incrementEnchant(whatEnchant, 1); }
 	@Unique @Override
@@ -184,7 +221,6 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 		for (int i = 0; i < this.enchantments.size(); i++) { this.enchantments.set(i, 0); }
 	}
 
-	// may be changed in the future, idk.
 	@Unique @Override
 	public void copyCrossDeath(ServerPlayerEntity oldplr) {}
 
@@ -195,28 +231,14 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 		this.setEnchantments(old.getEnchantmentsArray());
 	}
 
-
 	@Inject(at = @At("TAIL"), method = "readCustomDataFromNbt")
 	public void readCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
-		if (attributes != null && this.getWorld() != null && !this.getWorld().isClient) {
+		this.lapisworks$pendingAttackDamage = nbt.getDouble("LAPISWORKS_JUICED_FISTS");
+		this.lapisworks$pendingMaxHealth = nbt.getDouble("LAPISWORKS_JUICED_SKIN");
+		this.lapisworks$pendingMovementSpeed = nbt.getDouble("LAPISWORKS_JUICED_FEET");
+		this.lapisworks$pendingReach = nbt.getBoolean("LAPISWORKS_JUICED_REACH");
+		this.lapisworks$needsAttrSync = true;
 
-			setJuiceOnWorldLoad(
-				new AttributeContainer(DefaultAttributeContainer.builder()
-					.add(EntityAttributes.GENERIC_ATTACK_DAMAGE, nbt.getDouble("LAPISWORKS_JUICED_FISTS"))
-					.add(EntityAttributes.GENERIC_MAX_HEALTH, nbt.getDouble("LAPISWORKS_JUICED_SKIN"))
-					.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, nbt.getDouble("LAPISWORKS_JUICED_FEET"))
-					.build())
-			);
-
-			if (nbt.getBoolean("LAPISWORKS_JUICED_REACH"))
-				attributes.addTemporaryModifiers(
-					ImmutableMultimap.of(
-						REACH, MoarReachYouBitch.REACH_MODIFIER,
-						ATTACK_RANGE, MoarReachYouBitch.ATTACK_REACH_MODIFIER
-					)
-				);
-
-		}
 		setEnchantments(nbt.getIntArray("LAPISWORKS_ENCHANTMENTS"));
 	}
 
@@ -233,7 +255,6 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 		);
 	}
 
-	// not sure i even need this
 	@Inject(at = @At("HEAD"), method = "onDeath")
 	public void onDeath(DamageSource damageSource, CallbackInfo ci) {
 		this.setAllJuicedUpAttrsToZero();
@@ -281,10 +302,9 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 			target = "net/minecraft/enchantment/EnchantmentHelper.getRespiration(Lnet/minecraft/entity/LivingEntity;)I",
 			shift = At.Shift.AFTER
 		),
-		index = 2 // why is this supposed to be 2? there are only 2 variables in the entire method.
+		index = 2
 	)
 	private int getLongBreathEffectUnderwater(int original) {
-		// TODO: according to logging, getEnchant sometimes returns 0 here. investigate, maybe?????
 		return original + this.getEnchant(AllEnchantments.longBreath) * 2;
 	}
 
