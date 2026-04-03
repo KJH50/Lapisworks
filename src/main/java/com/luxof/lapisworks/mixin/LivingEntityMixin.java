@@ -145,6 +145,17 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 		if (!this.lapisworks$needsAttrSync) return;
 		if (this.attributes == null) return;
 		if (this.getWorld() != null && this.getWorld().isClient) return;
+		
+		boolean hasModifications = 
+			this.lapisworks$pendingAttackDamage > 0 ||
+			this.lapisworks$pendingMaxHealth > 0 ||
+			this.lapisworks$pendingMovementSpeed > 0 ||
+			this.lapisworks$pendingReach;
+		
+		if (!hasModifications) {
+			this.lapisworks$needsAttrSync = false;
+			return;
+		}
 
 		this.lapisworks$needsAttrSync = false;
 
@@ -237,9 +248,17 @@ public abstract class LivingEntityMixin extends Entity implements LapisworksInte
 		this.lapisworks$pendingMaxHealth = nbt.getDouble("LAPISWORKS_JUICED_SKIN");
 		this.lapisworks$pendingMovementSpeed = nbt.getDouble("LAPISWORKS_JUICED_FEET");
 		this.lapisworks$pendingReach = nbt.getBoolean("LAPISWORKS_JUICED_REACH");
-		this.lapisworks$needsAttrSync = true;
-
-		setEnchantments(nbt.getIntArray("LAPISWORKS_ENCHANTMENTS"));
+		
+		boolean hasLapisworksData = 
+			this.lapisworks$pendingAttackDamage > 0 ||
+			this.lapisworks$pendingMaxHealth > 0 ||
+			this.lapisworks$pendingMovementSpeed > 0 ||
+			this.lapisworks$pendingReach;
+		
+		if (hasLapisworksData) {
+			this.lapisworks$needsAttrSync = true;
+			setEnchantments(nbt.getIntArray("LAPISWORKS_ENCHANTMENTS"));
+		}
 	}
 
 	@Inject(at = @At("TAIL"), method = "writeCustomDataToNbt")
